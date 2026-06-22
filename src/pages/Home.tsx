@@ -1,7 +1,8 @@
 import { PageProps, Product } from "../types";
 import { useEffect, useRef, useState } from "react";
-import { collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "../firebase";
+import { collection, getDocs, query, where, getCountFromServer } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
+import { db, auth } from "../firebase";
 import { ArrowRight, Heart, Instagram, MessageCircle, Star, Sparkles } from "lucide-react";
 
 /* ── Intersection Observer reveal hook ── */
@@ -62,15 +63,23 @@ const MARQUEE_ITEMS = [
 export default function Home({ onNavigate }: PageProps) {
   const [newArrivals, setNewArrivals] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [customersServed, setCustomersServed] = useState(10);
+  const [userName, setUserName] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const blobRef = useRef<HTMLDivElement>(null);
 
   const sectionRef1 = useReveal();
   const sectionRef2 = useReveal();
   const sectionRef3 = useReveal();
 
-  /* Cursor blob */
+  /* Cursor blob — direct DOM write, no React re-renders */
   useEffect(() => {
-    const move = (e: MouseEvent) => setMousePos({ x: e.clientX, y: e.clientY });
+    const move = (e: MouseEvent) => {
+      if (blobRef.current) {
+        blobRef.current.style.left = `${e.clientX}px`;
+        blobRef.current.style.top  = `${e.clientY}px`;
+      }
+    };
     window.addEventListener('mousemove', move);
     return () => window.removeEventListener('mousemove', move);
   }, []);
@@ -88,6 +97,23 @@ export default function Home({ onNavigate }: PageProps) {
       }
     };
     fetchNewArrivals();
+
+    // Fetch dynamic customer count (base 10 + actual orders)
+    getCountFromServer(collection(db, 'orders'))
+      .then(snap => setCustomersServed(10 + snap.data().count))
+      .catch(e => console.error("Failed to get order count:", e));
+
+    // Fetch user name if logged in
+    const unsubAuth = onAuthStateChanged(auth, (u) => {
+      if (u && u.displayName) {
+        setUserName(u.displayName);
+        setIsLoggedIn(true);
+      } else {
+        setIsLoggedIn(false);
+      }
+    });
+
+    return () => unsubAuth();
   }, []);
 
   return (
@@ -96,7 +122,7 @@ export default function Home({ onNavigate }: PageProps) {
       {/* ── Cursor blob ── */}
       <div
         id="cursor-blob"
-        style={{ left: mousePos.x, top: mousePos.y }}
+        ref={blobRef}
         aria-hidden
       />
 
@@ -394,6 +420,8 @@ export default function Home({ onNavigate }: PageProps) {
                       src={product.imageUrl}
                       alt={product.name}
                       className="img-hover"
+                      loading="lazy"
+                      decoding="async"
                       style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                     />
                     {/* Badges */}
@@ -545,7 +573,7 @@ export default function Home({ onNavigate }: PageProps) {
                     fontFamily: 'var(--font-display)', fontWeight: 900,
                     fontSize: '3.2rem', letterSpacing: '-0.05em', lineHeight: 1,
                     color: 'white',
-                  }}>500<span style={{ color: 'var(--color-primary-light)' }}>+</span></p>
+                  }}>{customersServed}<span style={{ color: 'var(--color-primary-light)' }}>+</span></p>
                 </div>
                 <div style={{ position: 'relative', zIndex: 1, marginTop: 12 }}>
                   <div style={{ width: '100%', height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 2 }}>
@@ -676,7 +704,7 @@ export default function Home({ onNavigate }: PageProps) {
         </div>
       </section>
 
-      {/* ─────────────── NEWSLETTER / WHATSAPP ─────────────── */}
+      {/* ─────────────── WHATSAPP CTA ─────────────── */}
       <section style={{ paddingBottom: 96 }}>
         <div className="container">
           <div style={{
@@ -684,54 +712,57 @@ export default function Home({ onNavigate }: PageProps) {
             border: '2px dashed rgba(196,98,45,0.3)',
             borderRadius: 32,
             padding: 'clamp(36px, 5vw, 64px)',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))',
-            gap: 40,
+            display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
+            textAlign: 'center',
+            gap: 20,
           }}>
-            {/* Text */}
-            <div>
-              <span className="tag tag-primary" style={{ marginBottom: 16, display: 'inline-flex' }}>
-                <Sparkles size={10} />
-                Exclusive updates
-              </span>
-              <h2 style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: 'clamp(1.6rem, 3vw, 2.4rem)',
-                fontWeight: 800,
-                color: 'var(--color-ink)',
-                letterSpacing: '-0.03em',
-                lineHeight: 1.2,
-                marginBottom: 14,
-              }}>
-                Join the Cloud Bloom community
-              </h2>
-              <p style={{ color: 'var(--color-ink-muted)', fontSize: '0.95rem', lineHeight: 1.7 }}>
-                Get first access to new arrivals, crafting tips, and a special 10% off your first order when you send us your number on WhatsApp. 🎉
-              </p>
-            </div>
-
-            {/* Form */}
-            <form
-              onSubmit={e => e.preventDefault()}
-              style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
-            >
+            <span className="tag tag-primary" style={{ display: 'inline-flex' }}>
+              <Sparkles size={10} />
+              Exclusive updates
+            </span>
+            <h2 style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 'clamp(1.6rem, 3vw, 2.4rem)',
+              fontWeight: 800,
+              color: 'var(--color-ink)',
+              letterSpacing: '-0.03em',
+              lineHeight: 1.2,
+            }}>
+              Join the Cloud Bloom community
+            </h2>
+            <p style={{ color: 'var(--color-ink-muted)', fontSize: '0.95rem', lineHeight: 1.7, maxWidth: 440 }}>
+              {isLoggedIn ? `Welcome, ${userName}! ` : ''}
+              Send us a WhatsApp message to get first access to new arrivals, crafting tips, and a special 10% off your first order. 🎉
+            </p>
+            
+            {!isLoggedIn && (
               <input
                 className="input-field"
-                type="tel"
-                placeholder="Your WhatsApp number (+91...)"
+                type="text"
+                placeholder="What's your name?"
+                value={userName}
+                onChange={e => setUserName(e.target.value)}
+                style={{ maxWidth: 280, textAlign: 'center', marginBottom: -4 }}
               />
-              <button
-                type="submit"
-                className="btn btn-primary"
-                style={{ width: '100%', padding: '15px', fontSize: '0.95rem' }}
-              >
-                Get 10% off → Join Now
-              </button>
-              <p style={{ fontSize: '0.75rem', color: 'var(--color-ink-faint)', textAlign: 'center' }}>
-                No spam. Pinky promise 🤙 Unsubscribe anytime.
-              </p>
-            </form>
+            )}
+            
+            <button
+              onClick={() => {
+                const namePart = userName.trim() ? `Hi, I'm ${userName.trim()}! ` : 'Hi! ';
+                const text = encodeURIComponent(`${namePart}Add me to your list for updates and my 10% off first order 🎉`);
+                window.open(`https://wa.me/919272472780?text=${text}`, '_blank');
+              }}
+              className="btn btn-accent"
+              style={{ textDecoration: 'none', padding: '15px 32px', fontSize: '0.95rem' }}
+            >
+              <MessageCircle size={17} />
+              Join on WhatsApp — Get 10% Off
+            </button>
+            <p style={{ fontSize: '0.75rem', color: 'var(--color-ink-faint)' }}>
+              No spam. Pinky promise 🤙 Unsubscribe anytime.
+            </p>
           </div>
         </div>
       </section>

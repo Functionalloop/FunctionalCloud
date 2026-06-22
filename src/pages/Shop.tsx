@@ -211,6 +211,8 @@ export default function Shop({ onNavigate }: PageProps) {
                     src={product.imageUrl}
                     alt={product.name}
                     className="img-hover"
+                    loading="lazy"
+                    decoding="async"
                     style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                   />
                   {/* Badges */}

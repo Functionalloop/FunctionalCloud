@@ -111,7 +111,7 @@ export default function OurStory({ onNavigate }: PageProps) {
                     transform: `rotate(${i % 2 === 0 ? '-1.5deg' : '1.5deg'})`,
                     transition: 'transform 0.4s ease',
                   }}>
-                    <img src={item.img} alt={item.title} style={{ width: '100%', height: 280, objectFit: 'cover', display: 'block' }} />
+                    <img src={item.img} alt={item.title} loading="lazy" decoding="async" style={{ width: '100%', height: 280, objectFit: 'cover', display: 'block' }} />
                     <div style={{ padding: '20px 24px 24px' }}>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', fontWeight: 700, color: item.tagColor, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                         {item.year} · {item.tag}
@@ -167,7 +167,7 @@ export default function OurStory({ onNavigate }: PageProps) {
                     transform: 'rotate(1.5deg)',
                     transition: 'transform 0.4s ease',
                   }}>
-                    <img src={item.img} alt={item.title} style={{ width: '100%', height: 280, objectFit: 'cover', display: 'block' }} />
+                    <img src={item.img} alt={item.title} loading="lazy" decoding="async" style={{ width: '100%', height: 280, objectFit: 'cover', display: 'block' }} />
                     <div style={{ padding: '20px 24px 24px' }}>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', fontWeight: 700, color: item.tagColor, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                         {item.year} · {item.tag}

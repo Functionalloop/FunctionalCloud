@@ -1,4 +1,4 @@
-import { ArrowLeft, Cloud, Droplets, Eye, Heart, Leaf, Minus, Plus, Star } from "lucide-react";
+import { ArrowLeft, Cloud, Droplets, Eye, Heart, Leaf, Star } from "lucide-react";
 import { PageProps, Product } from "../types";
 import { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
@@ -7,7 +7,6 @@ import { db } from "../firebase";
 export default function ProductDetail({ onNavigate, data }: PageProps) {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
-  const [qty, setQty] = useState(1);
   const [imgLoaded, setImgLoaded] = useState(false);
 
   useEffect(() => {
@@ -158,10 +157,16 @@ export default function ProductDetail({ onNavigate, data }: PageProps) {
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 700, color: 'var(--color-primary)' }}>
                   ₹{product.price.toFixed(0)}
                 </span>
-                <span style={{ fontSize: '0.84rem', color: 'var(--color-ink-faint)', textDecoration: 'line-through' }}>
-                  ₹{(product.price * 1.2).toFixed(0)}
-                </span>
-                <span className="tag tag-accent" style={{ fontSize: '0.7rem' }}>20% off</span>
+                {product.originalPrice && product.originalPrice > product.price && (
+                  <>
+                    <span style={{ fontSize: '0.84rem', color: 'var(--color-ink-faint)', textDecoration: 'line-through' }}>
+                      ₹{product.originalPrice.toFixed(0)}
+                    </span>
+                    <span className="tag tag-accent" style={{ fontSize: '0.7rem' }}>
+                      {Math.round((1 - product.price / product.originalPrice) * 100)}% off
+                    </span>
+                  </>
+                )}
               </div>
             </div>
 
@@ -170,36 +175,7 @@ export default function ProductDetail({ onNavigate, data }: PageProps) {
               {product.description}
             </p>
 
-            {/* Quantity */}
-            <div>
-              <p className="label-caps" style={{ marginBottom: 12 }}>Quantity</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-                <button
-                  onClick={() => setQty(q => Math.max(1, q - 1))}
-                  className="btn"
-                  style={{ width: 42, height: 42, borderRadius: '12px 0 0 12px', border: '1.5px solid var(--color-outline)', borderRight: 'none', background: 'white', color: 'var(--color-ink)' }}
-                >
-                  <Minus size={15} />
-                </button>
-                <div style={{
-                  width: 52, height: 42,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  border: '1.5px solid var(--color-outline)',
-                  fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '1rem',
-                  background: 'white',
-                  color: 'var(--color-ink)',
-                }}>
-                  {qty}
-                </div>
-                <button
-                  onClick={() => setQty(q => q + 1)}
-                  className="btn"
-                  style={{ width: 42, height: 42, borderRadius: '0 12px 12px 0', border: '1.5px solid var(--color-outline)', borderLeft: 'none', background: 'white', color: 'var(--color-ink)' }}
-                >
-                  <Plus size={15} />
-                </button>
-              </div>
-            </div>
+
 
             {/* CTA */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -209,7 +185,7 @@ export default function ProductDetail({ onNavigate, data }: PageProps) {
                 style={{ width: '100%', padding: '17px', fontSize: '1rem', borderRadius: 16 }}
               >
                 <Heart size={18} />
-                Adopt Now · ₹{(product.price * qty).toFixed(0)}
+                Adopt Now · ₹{product.price.toFixed(0)}
               </button>
               <button
                 onClick={() => onNavigate('shop')}

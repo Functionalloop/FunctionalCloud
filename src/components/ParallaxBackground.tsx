@@ -1,14 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 export default function ParallaxBackground() {
-  const [offsetY, setOffsetY] = useState(0);
+  const layer1Ref = useRef<HTMLDivElement>(null);
+  const layer2Ref = useRef<HTMLDivElement>(null);
+  const layer3Ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let ticking = false;
     const onScroll = () => {
       if (!ticking) {
         window.requestAnimationFrame(() => {
-          setOffsetY(window.scrollY);
+          const y = window.scrollY;
+          if (layer1Ref.current)
+            layer1Ref.current.style.transform = `translateY(${y * 0.15}px)`;
+          if (layer2Ref.current)
+            layer2Ref.current.style.transform = `translateY(${y * 0.08}px)`;
+          if (layer3Ref.current)
+            layer3Ref.current.style.transform = `translateY(${y * -0.06}px)`;
           ticking = false;
         });
         ticking = true;
@@ -32,38 +40,47 @@ export default function ParallaxBackground() {
       }}
     >
       {/* Subtle warm grain texture layer */}
-      <div style={{
-        position: 'absolute',
-        top: '-20%', left: '-10%',
-        width: '120%', height: '140%',
-        backgroundImage: 'url("https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=60&w=1800&auto=format&fit=crop")',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        opacity: 0.025,
-        transform: `translateY(${offsetY * 0.15}px)`,
-        transition: 'transform 60ms ease-out',
-        filter: 'saturate(0)',
-      }} />
+      <div
+        ref={layer1Ref}
+        style={{
+          position: 'absolute',
+          top: '-20%', left: '-10%',
+          width: '120%', height: '140%',
+          backgroundImage: 'url("https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=60&w=1800&auto=format&fit=crop")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          opacity: 0.025,
+          transform: 'translateY(0px)',
+          transition: 'transform 60ms ease-out',
+          filter: 'saturate(0)',
+        }}
+      />
 
       {/* Warm top-right glow */}
-      <div style={{
-        position: 'absolute',
-        top: -200, right: -200,
-        width: 800, height: 800,
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(232,192,125,0.12) 0%, transparent 65%)',
-        transform: `translateY(${offsetY * 0.08}px)`,
-      }} />
+      <div
+        ref={layer2Ref}
+        style={{
+          position: 'absolute',
+          top: -200, right: -200,
+          width: 800, height: 800,
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(232,192,125,0.12) 0%, transparent 65%)',
+          transform: 'translateY(0px)',
+        }}
+      />
 
       {/* Green bottom-left glow */}
-      <div style={{
-        position: 'absolute',
-        bottom: -300, left: -200,
-        width: 700, height: 700,
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(127,186,143,0.1) 0%, transparent 65%)',
-        transform: `translateY(${offsetY * -0.06}px)`,
-      }} />
+      <div
+        ref={layer3Ref}
+        style={{
+          position: 'absolute',
+          bottom: -300, left: -200,
+          width: 700, height: 700,
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(127,186,143,0.1) 0%, transparent 65%)',
+          transform: 'translateY(0px)',
+        }}
+      />
 
       {/* Subtle gradient overlay for readability */}
       <div style={{

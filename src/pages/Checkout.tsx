@@ -186,7 +186,7 @@ export default function Checkout({ onNavigate, data, user, authLoading }: Checko
         paymentProofUrl: paymentProofBase64,
         createdAt: Date.now(),
       };
-      await addDoc(collection(db, 'orders'), order);
+      const docRef = await addDoc(collection(db, 'orders'), order);
 
       // Save address to user profile for next time
       await setDoc(doc(db, 'users', user.uid), {
@@ -200,7 +200,7 @@ export default function Checkout({ onNavigate, data, user, authLoading }: Checko
         }
       }, { merge: true });
 
-      onNavigate('thankyou');
+      onNavigate('thankyou', { order, orderId: docRef.id });
     } catch (err: any) {
       console.error(err);
       alert(`Failed to place order.\n\nError: ${err?.message || err}`);
@@ -397,8 +397,8 @@ export default function Checkout({ onNavigate, data, user, authLoading }: Checko
 
               <div className="flex flex-col md:flex-row gap-8 items-start">
                 <div className="bg-surface-container p-4 rounded-2xl border-2 border-dashed border-outline-variant w-full md:w-auto flex-shrink-0 flex flex-col items-center justify-center">
-                  <div className="w-40 h-40 bg-surface rounded-xl flex items-center justify-center border border-outline-variant/30 relative overflow-hidden">
-                    <img src="https://lh3.googleusercontent.com/aida-public/AOUr-Yv2wBIt19W4q9b1y95X644S0YlA-67n2g_m8EaQ1_45L8nO1T411_oO5-0V5R01n04_Z5G02hO6h21E1O6yZ8h0L90A61S0q7t41Q" alt="QR Code" className="w-full h-full object-cover" />
+                  <div className="w-40 h-40 bg-surface rounded-xl flex items-center justify-center border border-outline-variant/30 relative overflow-hidden p-2">
+                    <img src="/payment-qr.jpg" alt="Scan to pay" className="w-full h-full object-contain mix-blend-multiply" />
                   </div>
                   <p className="mt-4 text-sm font-label-md text-on-surface text-center">Scan to Pay</p>
                   <p className="text-xs text-on-surface-variant">Amount: ₹{total.toFixed(2)}</p>

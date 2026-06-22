@@ -118,7 +118,7 @@ export default function App() {
         {currentPage === 'thankyou' && <ThankYou onNavigate={navigate} />}
         {currentPage === 'story' && <OurStory onNavigate={navigate} />}
         {currentPage === 'care' && <Care onNavigate={navigate} />}
-        {currentPage === 'admin' && <Admin onNavigate={navigate} />}
+        {currentPage === 'admin' && <Admin onNavigate={navigate} user={user} authLoading={authLoading} />}
       </main>
 
       {showFooter && <Footer onNavigate={navigate} />}

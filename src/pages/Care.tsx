@@ -1,7 +1,7 @@
 import { Droplets, Heart, Sun, Wind } from "lucide-react";
 import { PageProps } from "../types";
 
-export default function Care({ onNavigate }: PageProps) {
+export default function Care({ }: PageProps) {
   return (
     <div className="max-w-3xl mx-auto px-gutter py-24 md:py-32 flex-grow w-full page-enter">
       <div className="text-center mb-16">

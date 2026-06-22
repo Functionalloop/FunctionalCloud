@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { PageProps, Order, Product } from '../types';
 import { auth, db } from '../firebase';
-import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { signInWithPopup, signOut, User } from 'firebase/auth';
 import { googleProvider } from '../firebase';
 import {
   collection, getDocs, addDoc, updateDoc, deleteDoc, doc
@@ -14,16 +14,19 @@ import {
 type Tab = 'overview' | 'products' | 'orders';
 
 const EMPTY_PRODUCT = {
-  name: '', price: 0, description: '', category: 'Amigurumi', imageUrl: '',
+  name: '', price: 0, originalPrice: 0, description: '', category: 'Amigurumi', imageUrl: '',
   isBestseller: false, isNewArrival: false, isLimitedEdition: false,
   features: [] as string[]
 };
 
-export default function Admin({ onNavigate }: PageProps) {
-  const [user, setUser] = useState<User | null>(null);
+interface AdminProps extends PageProps {
+  user: User | null;
+  authLoading: boolean;
+}
+
+export default function Admin({ onNavigate, user, authLoading }: AdminProps) {
   const [authError, setAuthError] = useState('');
   const [signingIn, setSigningIn] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>('overview');
 
   const [orders, setOrders] = useState<Order[]>([]);
@@ -37,14 +40,7 @@ export default function Admin({ onNavigate }: PageProps) {
   const [featureInput, setFeatureInput] = useState('');
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setLoading(false);
-      if (u) loadData();
-    });
-    return () => unsub();
-  }, []);
+
 
   const loadData = async () => {
     setDataLoading(true);
@@ -58,6 +54,12 @@ export default function Admin({ onNavigate }: PageProps) {
     } catch (e) { console.error(e); }
     finally { setDataLoading(false); }
   };
+
+  // Load data whenever user becomes available (covers both first mount and re-login)
+  useEffect(() => {
+    if (user) loadData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const handleGoogleLogin = async () => {
     setAuthError('');
@@ -134,7 +136,9 @@ export default function Admin({ onNavigate }: PageProps) {
   const openEdit = (p: Product) => {
     setEditingId(p.id!);
     setForm({
-      name: p.name, price: p.price, description: p.description,
+      name: p.name, price: p.price,
+      originalPrice: p.originalPrice || 0,
+      description: p.description,
       category: p.category || 'Amigurumi', imageUrl: p.imageUrl,
       isBestseller: p.isBestseller || false,
       isNewArrival: p.isNewArrival || false,
@@ -185,7 +189,7 @@ export default function Admin({ onNavigate }: PageProps) {
   const updateOrderStatus = async (id: string, status: string) => {
     try {
       await updateDoc(doc(db, 'orders', id), { status });
-      setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
+      setOrders(prev => prev.map(o => o.id === id ? { ...o, status: status as Order['status'] } : o));
     } catch (e) { alert('Failed to update status.'); }
   };
 
@@ -194,7 +198,7 @@ export default function Admin({ onNavigate }: PageProps) {
   const pendingCount = orders.filter(o => o.status === 'pending').length;
 
   // ─── Auth screen ───
-  if (loading) return (
+  if (authLoading) return (
     <div className="min-h-screen flex items-center justify-center bg-surface">
       <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
     </div>
@@ -321,6 +325,7 @@ export default function Admin({ onNavigate }: PageProps) {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b-2 border-dashed border-outline-variant text-left text-on-surface-variant">
+                        <th className="pb-3 font-label-md">Order ID</th>
                         <th className="pb-3 font-label-md">Customer</th>
                         <th className="pb-3 font-label-md">Items</th>
                         <th className="pb-3 font-label-md">Total</th>
@@ -330,6 +335,7 @@ export default function Admin({ onNavigate }: PageProps) {
                     <tbody className="divide-y divide-dashed divide-outline-variant/50">
                       {orders.slice(0, 5).map(o => (
                         <tr key={o.id} className="hover:bg-surface-container/50 transition-colors">
+                          <td className="py-3 font-mono text-xs text-on-surface-variant">#{o.id?.slice(0, 8).toUpperCase()}</td>
                           <td className="py-3 font-medium text-on-surface">{o.customerName || o.customerWhatsapp}</td>
                           <td className="py-3 text-on-surface-variant">{o.items?.map((i: any) => i.name).join(', ') || '—'}</td>
                           <td className="py-3 text-primary font-bold">₹{o.total?.toFixed(2)}</td>
@@ -423,6 +429,9 @@ export default function Admin({ onNavigate }: PageProps) {
                         <div className="flex items-center gap-3 mb-1">
                           <p className="font-bold text-on-surface">{o.customerName || '—'}</p>
                           <span className="text-xs text-on-surface-variant">{o.customerWhatsapp}</span>
+                          <span className="font-mono text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded-full ml-auto sm:ml-0">
+                            #{o.id?.slice(0, 8).toUpperCase()}
+                          </span>
                         </div>
                         <p className="text-sm text-on-surface-variant mb-1">{o.address}, {o.city}, {o.state} {o.zip}</p>
                         {o.extraDescription && (
@@ -482,6 +491,7 @@ export default function Admin({ onNavigate }: PageProps) {
                 { label: 'Product Name *', key: 'name', type: 'text', placeholder: 'e.g. Cozy Rabbit' },
                 { label: 'Image URL *', key: 'imageUrl', type: 'url', placeholder: 'https://...' },
                 { label: 'Price (₹) *', key: 'price', type: 'number', placeholder: '1999' },
+                { label: 'Original Price (₹) — leave 0 if not on sale', key: 'originalPrice', type: 'number', placeholder: '0' },
               ].map(({ label, key, type, placeholder }) => (
                 <div key={key}>
                   <label className="block text-sm font-label-md text-on-surface-variant mb-1.5">{label}</label>

@@ -10,6 +10,7 @@ export interface Product {
   name: string;
   description: string;
   price: number;
+  originalPrice?: number;   // set only when product is on sale
   imageUrl: string;
   category: string;
   features: string[];

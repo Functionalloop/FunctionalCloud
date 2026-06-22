@@ -2,6 +2,7 @@ import { ShoppingBasket, User, LogIn, Menu, X, Sparkles } from 'lucide-react';
 import { Page } from '../App';
 import { useState, useEffect, useRef } from 'react';
 import { User as FirebaseUser } from 'firebase/auth';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 
 export default function Navigation({
   currentPage,
@@ -14,14 +15,8 @@ export default function Navigation({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [navState, setNavState] = useState<'top' | 'solid' | 'hidden'>('top');
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+  const isMobile = useMediaQuery('(max-width: 767px)');
   const lastScrollY = useRef(0);
-
-  useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
 
   useEffect(() => {
     const onScroll = () => {

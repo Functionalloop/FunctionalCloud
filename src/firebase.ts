@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getStorage } from "firebase/storage";
+
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -17,17 +17,17 @@ export const isFirebaseConfigured = !!firebaseConfig.apiKey;
 let app: any = null;
 let db: any = null;
 let auth: any = null;
-let storage: any = null;
+
 let googleProvider: GoogleAuthProvider | null = null;
 
 if (isFirebaseConfigured) {
   app = initializeApp(firebaseConfig);
   db = getFirestore(app);
   auth = getAuth(app);
-  storage = getStorage(app);
+
   googleProvider = new GoogleAuthProvider();
 } else {
   console.warn("Firebase is not configured! Please add VITE_FIREBASE_API_KEY to your .env file.");
 }
 
-export { app, db, auth, storage, googleProvider };
+export { db, auth, googleProvider };
